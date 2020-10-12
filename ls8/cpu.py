@@ -97,7 +97,7 @@ class CPU:
                 self.pc += 1
 
             elif ir == PRN:
-                print(ir)
+                print(self.ram_read(operand_a))
                 self.pc += 2
 
             elif ir == LDI:
