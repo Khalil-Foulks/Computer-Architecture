@@ -7,7 +7,20 @@ class CPU:
 
     def __init__(self):
         """Construct a new CPU."""
-        pass
+        self.pc = 0
+        self.ram = [0] * 256 # memory
+        self.reg = [0] * 8 # register
+    
+    def ram_read(self, mar):
+        value_in_mem = self.ram[mar]
+
+        return value_in_mem
+        
+    # MAR contains the address that is being read or written to; MDR contains the data that was read or the data to write
+    def ram_write(self, mar, mdr):
+        self.ram[mar] = mdr
+        return self.ram[mar]
+
 
     def load(self):
         """Load a program into memory."""
@@ -19,10 +32,10 @@ class CPU:
         program = [
             # From print8.ls8
             0b10000010, # LDI R0,8
-            0b00000000,
-            0b00001000,
+            0b00000000, # operand
+            0b00001000, # operand
             0b01000111, # PRN R0
-            0b00000000,
+            0b00000000, # operand
             0b00000001, # HLT
         ]
 
