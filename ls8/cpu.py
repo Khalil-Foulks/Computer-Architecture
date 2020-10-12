@@ -2,12 +2,22 @@
 
 import sys
 
+NOP = 0b00000000
+HLT = 0b00000001 
+LDI = 0b10000010
+LD = 0b10000011 
+ST = 0b10000100 
+POP = 0b01000110 
+PRN = 0b01000111 
+PRA = 0b01001000 
+PUSH = 0b01000101 
+
 class CPU:
     """Main CPU class."""
 
     def __init__(self):
         """Construct a new CPU."""
-        self.pc = 0
+        self.pc = 0 # program counter, pointer to the currently executing instruction
         self.ram = [0] * 256 # memory
         self.reg = [0] * 8 # register
     
@@ -75,4 +85,26 @@ class CPU:
 
     def run(self):
         """Run the CPU."""
-        pass
+        running = True
+        
+        while running:
+            ir = self.ram_read(self.pc)
+            operand_a = self.ram_read(self.pc + 1)
+            operand_b = self.ram_read(self.pc + 2)
+
+            if ir == HLT:
+                running = False
+                self.pc += 1
+
+            elif ir == PRN:
+                print(ir)
+                self.pc += 2
+
+            elif ir == LDI:
+                self.ram[operand_a] = operand_b
+                self.pc += 3
+
+            else:
+                print(f"unknown instruction {ir} at address {self.pc}")
+                sys.exit(1)
+
