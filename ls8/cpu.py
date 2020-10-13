@@ -11,6 +11,7 @@ POP = 0b01000110
 PRN = 0b01000111 
 PRA = 0b01001000 
 PUSH = 0b01000101 
+MUL = 0b10100010
 
 class CPU:
     """Main CPU class."""
@@ -28,7 +29,6 @@ class CPU:
         
     def ram_write(self, address, value):
         self.ram[address] = value
-        return self.ram[address]
 
 
     def load(self):
@@ -89,6 +89,8 @@ class CPU:
         if op == "ADD":
             self.reg[reg_a] += self.reg[reg_b]
         #elif op == "SUB": etc
+        elif op == "MUL":
+            self.reg[reg_a] *= self.reg[reg_b]
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -128,11 +130,15 @@ class CPU:
                 self.pc += 1
 
             elif ir == PRN:
-                print(self.ram_read(operand_a))
+                print(self.reg[operand_a])
                 self.pc += 2
 
             elif ir == LDI:
-                self.ram_write(operand_a, operand_b)
+                self.reg[operand_a] = operand_b
+                self.pc += 3
+            
+            elif ir == MUL:
+                self.alu("MUL", operand_a, operand_b)
                 self.pc += 3
 
             else:
