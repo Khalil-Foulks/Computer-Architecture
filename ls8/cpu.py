@@ -21,6 +21,11 @@ class CPU:
         self.pc = 0 # program counter, pointer to the currently executing instruction
         self.ram = [0] * 256 # memory; 256 bits/slots 
         self.reg = [0] * 8 # register
+        self.branchtable = {}
+        self.branchtable[HLT] = self.handle_hlt
+        self.branchtable[LDI] = self.handle_ldi
+        self.branchtable[PRN] = self.handle_prn
+        self.branchtable[MUL] = self.handle_mul
     
     def ram_read(self, address):
         value_in_mem = self.ram[address]
@@ -113,6 +118,23 @@ class CPU:
             print(" %02X" % self.reg[i], end='')
 
         print()
+    
+    def handle_hlt(self, operand_a, operand_b):
+        sys.exit()
+        self.pc += 1
+
+    def handle_ldi(self, operand_a, operand_b):
+        self.reg[operand_a] = operand_b
+        self.pc += 3
+
+    def handle_prn(self,  operand_a, operand_b):
+        print(self.reg[operand_a])
+        self.pc += 2
+
+    def handle_mul(self, operand_a, operand_b):
+        self.alu("MUL", operand_a, operand_b)
+        self.pc += 3
+
 
     def run(self):
         """Run the CPU."""
@@ -122,26 +144,30 @@ class CPU:
             ir = self.ram_read(self.pc)
             operand_a = self.ram_read(self.pc + 1)
             operand_b = self.ram_read(self.pc + 2)
-            
+            #--------------------Before Branch Table-------------------------
             # self.trace()
 
-            if ir == HLT:
-                running = False
-                self.pc += 1
+            # if ir == HLT:
+            #     running = False
+            #     self.pc += 1
 
-            elif ir == PRN:
-                print(self.reg[operand_a])
-                self.pc += 2
+            # elif ir == PRN:
+            #     print(self.reg[operand_a])
+            #     self.pc += 2
 
-            elif ir == LDI:
-                self.reg[operand_a] = operand_b
-                self.pc += 3
+            # elif ir == LDI:
+            #     self.reg[operand_a] = operand_b
+            #     self.pc += 3
             
-            elif ir == MUL:
-                self.alu("MUL", operand_a, operand_b)
-                self.pc += 3
+            # elif ir == MUL:
+            #     self.alu("MUL", operand_a, operand_b)
+            #     self.pc += 3
 
-            else:
-                print(f"unknown instruction {ir} at address {self.pc}")
-                sys.exit(1)
+            # else:
+            #     print(f"unknown instruction {ir} at address {self.pc}")
+            #     sys.exit(1)
+            #----------------------------------------------------------------
+
+            if self.branchtable.get(ir):
+                self.branchtable[ir](operand_a, operand_b)
 
