@@ -26,6 +26,10 @@ class CPU:
         self.branchtable[LDI] = self.handle_ldi
         self.branchtable[PRN] = self.handle_prn
         self.branchtable[MUL] = self.handle_mul
+        self.branchtable[PUSH] = self.handle_push
+        self.branchtable[POP] = self.handle_pop
+        self.sp = 0b00000111 # stack pointer set to 7
+        self.reg[self.sp] = 0xf4 # setting register 7 to hex value of F4
     
     def ram_read(self, address):
         value_in_mem = self.ram[address]
@@ -121,7 +125,6 @@ class CPU:
     
     def handle_hlt(self, operand_a, operand_b):
         sys.exit()
-        self.pc += 1
 
     def handle_ldi(self, operand_a, operand_b):
         self.reg[operand_a] = operand_b
@@ -134,6 +137,38 @@ class CPU:
     def handle_mul(self, operand_a, operand_b):
         self.alu("MUL", operand_a, operand_b)
         self.pc += 3
+    
+    def handle_pop(self, operand_a, operand_b):
+        # self.trace()
+
+        # Get value from top of stack
+        top_of_stack = self.reg[self.sp]
+        # copy of value from top of stack
+        value = self.ram[top_of_stack]
+
+        # Store in a register
+        reg_num = operand_a
+        self.reg[reg_num] = value
+
+        # Increment the SP
+        self.reg[self.sp] += 1
+        self.pc += 2
+
+    def handle_push(self, operand_a, operand_b):
+        # self.trace()
+
+        # Decrement the SP
+        self.reg[self.sp] -= 1    
+
+        # Grab the value out of the given register
+        reg_num = operand_a
+        value = self.reg[reg_num]
+
+        # Copy the value onto the stack
+        top_of_stack = self.reg[self.sp]
+        self.ram[top_of_stack] = value
+
+        self.pc += 2
 
 
     def run(self):
@@ -168,6 +203,11 @@ class CPU:
             #     sys.exit(1)
             #----------------------------------------------------------------
 
+            # if current opcode is in dictionary
             if self.branchtable.get(ir):
+                # run the associated function passing in operand_a and operand_b
                 self.branchtable[ir](operand_a, operand_b)
+            else:
+                print(f"unknown instruction {ir} at address {self.pc}")
+                sys.exit(1)
 
