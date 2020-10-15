@@ -148,60 +148,64 @@ class CPU:
         self.alu("ADD", operand_a, operand_b)
         self.pc += 3
     
-    def handle_pop(self, operand_a, operand_b):
-        # self.trace()
-
-        # Get value from top of stack
-        top_of_stack = self.reg[self.sp]
-        # copy of value from top of stack
-        value = self.ram[top_of_stack]
-
-        # Store in a register
-        reg_num = operand_a
-        self.reg[reg_num] = value
-
-        # Increment the SP
-        self.reg[self.sp] += 1
-        self.pc += 2
-
-    def handle_push(self, operand_a, operand_b):
-        # self.trace()
-
-        # Decrement the SP
-        self.reg[self.sp] -= 1    
-
-        # Grab the value out of the given register
-        reg_num = operand_a
-        value = self.reg[reg_num]
-
-        # Copy the value onto the stack
-        top_of_stack = self.reg[self.sp]
-        self.ram[top_of_stack] = value
-
-        self.pc += 2
-    
-    def handle_call(self, operand_a, operand_b):
-        
+    def push_val(self, value):
         # Decrement the SP
         self.reg[self.sp] -= 1 
 
         # Copy the value onto the stack
         top_of_stack = self.reg[self.sp]
-        self.ram[top_of_stack] = operand_b
+        self.ram[top_of_stack] = value
 
-        reg_num = operand_a
-        subroutine = self.reg[reg_num]
-
-        self.pc = subroutine
-
-    def handle_ret(self, operand_a, operand_b):
+    def pop_val(self):
         # Get value from top of stack
         top_of_stack = self.reg[self.sp]
         # copy of value from top of stack
-        return_value = self.ram[top_of_stack]
-
+        value = self.ram[top_of_stack]
+        # Increment the SP
         self.reg[self.sp] += 1
 
+        return value
+        
+    def handle_pop(self, operand_a, operand_b):
+        # self.trace()
+
+        # Store in a register
+        reg_num = operand_a
+        self.reg[reg_num] = self.pop_val()
+
+        self.pc += 2
+
+    def handle_push(self, operand_a, operand_b):
+        # self.trace() 
+
+        # Grab the value out of the given register
+        reg_num = operand_a
+        value = self.reg[reg_num]
+
+        self.push_val(value)
+
+        self.pc += 2
+    
+    
+    def handle_call(self, operand_a, operand_b):
+        # Get address of the next instruction after the CALL
+        return_addr = self.pc + 2
+        
+        # push on to the stack
+        self.push_val(return_addr)
+
+        # Grab the subroutine address
+        reg_num = operand_a
+        subroutine = self.reg[reg_num]
+
+        # Jump to subroutine
+        self.pc = subroutine
+
+    def handle_ret(self, operand_a, operand_b):
+        # Get return addr from top of stack
+        return_value = self.pop_val()
+
+        # Store it in the PC
         self.pc = return_value
 
     def run(self):
