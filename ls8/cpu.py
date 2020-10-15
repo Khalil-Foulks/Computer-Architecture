@@ -12,6 +12,9 @@ PRN = 0b01000111
 PRA = 0b01001000 
 PUSH = 0b01000101 
 MUL = 0b10100010
+CALL = 0b01010000
+RET = 0b00010001
+ADD = 0b10100000
 
 class CPU:
     """Main CPU class."""
@@ -28,6 +31,9 @@ class CPU:
         self.branchtable[MUL] = self.handle_mul
         self.branchtable[PUSH] = self.handle_push
         self.branchtable[POP] = self.handle_pop
+        self.branchtable[CALL] = self.handle_call
+        self.branchtable[RET] = self.handle_ret
+        self.branchtable[ADD] = self.handle_add
         self.sp = 0b00000111 # stack pointer set to 7
         self.reg[self.sp] = 0xf4 # setting register 7 to hex value of F4
     
@@ -138,38 +144,69 @@ class CPU:
         self.alu("MUL", operand_a, operand_b)
         self.pc += 3
     
-    def handle_pop(self, operand_a, operand_b):
-        # self.trace()
-
-        # Get value from top of stack
-        top_of_stack = self.reg[self.sp]
-        # copy of value from top of stack
-        value = self.ram[top_of_stack]
-
-        # Store in a register
-        reg_num = operand_a
-        self.reg[reg_num] = value
-
-        # Increment the SP
-        self.reg[self.sp] += 1
-        self.pc += 2
-
-    def handle_push(self, operand_a, operand_b):
-        # self.trace()
-
+    def handle_add(self, operand_a, operand_b):
+        self.alu("ADD", operand_a, operand_b)
+        self.pc += 3
+    
+    def push_val(self, value):
         # Decrement the SP
-        self.reg[self.sp] -= 1    
-
-        # Grab the value out of the given register
-        reg_num = operand_a
-        value = self.reg[reg_num]
+        self.reg[self.sp] -= 1 
 
         # Copy the value onto the stack
         top_of_stack = self.reg[self.sp]
         self.ram[top_of_stack] = value
 
+    def pop_val(self):
+        # Get value from top of stack
+        top_of_stack = self.reg[self.sp]
+        # copy of value from top of stack
+        value = self.ram[top_of_stack]
+        # Increment the SP
+        self.reg[self.sp] += 1
+
+        return value
+        
+    def handle_pop(self, operand_a, operand_b):
+        # self.trace()
+
+        # Store in a register
+        reg_num = operand_a
+        self.reg[reg_num] = self.pop_val()
+
         self.pc += 2
 
+    def handle_push(self, operand_a, operand_b):
+        # self.trace() 
+
+        # Grab the value out of the given register
+        reg_num = operand_a
+        value = self.reg[reg_num]
+
+        self.push_val(value)
+
+        self.pc += 2
+    
+    
+    def handle_call(self, operand_a, operand_b):
+        # Get address of the next instruction after the CALL
+        return_addr = self.pc + 2
+        
+        # push on to the stack
+        self.push_val(return_addr)
+
+        # Grab the subroutine address
+        reg_num = operand_a
+        subroutine = self.reg[reg_num]
+
+        # Jump to subroutine
+        self.pc = subroutine
+
+    def handle_ret(self, operand_a, operand_b):
+        # Get return addr from top of stack
+        return_value = self.pop_val()
+
+        # Store it in the PC
+        self.pc = return_value
 
     def run(self):
         """Run the CPU."""
@@ -179,29 +216,6 @@ class CPU:
             ir = self.ram_read(self.pc)
             operand_a = self.ram_read(self.pc + 1)
             operand_b = self.ram_read(self.pc + 2)
-            #--------------------Before Branch Table-------------------------
-            # self.trace()
-
-            # if ir == HLT:
-            #     running = False
-            #     self.pc += 1
-
-            # elif ir == PRN:
-            #     print(self.reg[operand_a])
-            #     self.pc += 2
-
-            # elif ir == LDI:
-            #     self.reg[operand_a] = operand_b
-            #     self.pc += 3
-            
-            # elif ir == MUL:
-            #     self.alu("MUL", operand_a, operand_b)
-            #     self.pc += 3
-
-            # else:
-            #     print(f"unknown instruction {ir} at address {self.pc}")
-            #     sys.exit(1)
-            #----------------------------------------------------------------
 
             # if current opcode is in dictionary
             if self.branchtable.get(ir):
