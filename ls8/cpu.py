@@ -15,6 +15,12 @@ MUL = 0b10100010
 CALL = 0b01010000
 RET = 0b00010001
 ADD = 0b10100000
+#------
+CMP = 0b10100111
+JMP = 0b01010100
+JNE = 0b01010110
+JEQ = 0b01010101
+
 
 class CPU:
     """Main CPU class."""
@@ -34,8 +40,16 @@ class CPU:
         self.branchtable[CALL] = self.handle_call
         self.branchtable[RET] = self.handle_ret
         self.branchtable[ADD] = self.handle_add
+        #-----sprint----
+        self.branchtable[CMP] = self.handle_cmp
+        self.branchtable[JMP] = self.handle_jmp
+        self.branchtable[JNE] = self.handle_jne
+        self.branchtable[JEQ] = self.handle_jeq
+
         self.sp = 0b00000111 # stack pointer set to 7
         self.reg[self.sp] = 0xf4 # setting register 7 to hex value of F4
+
+        self.fl = 0b00000000
     
     def ram_read(self, address):
         value_in_mem = self.ram[address]
@@ -106,6 +120,23 @@ class CPU:
         #elif op == "SUB": etc
         elif op == "MUL":
             self.reg[reg_a] *= self.reg[reg_b]
+        elif op == "CMP":
+            if self.reg[reg_a] < self.reg[reg_b]:
+                # L flag is 1
+                # G flag is 0
+                # E flag is 0
+                self.fl = 0b00000100
+            elif self.reg[reg_a] > self.reg[reg_b]:
+                # L flag is 0
+                # G flag is 1
+                # E flag is 0
+                self.fl = 0b00000010
+            else:
+                # L flag is 0
+                # G flag is 0
+                # E flag is 1
+                self.fl = 0b00000001
+            # print(self.fl)
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -207,6 +238,34 @@ class CPU:
 
         # Store it in the PC
         self.pc = return_value
+
+    #---------------------------
+    def handle_cmp(self, operand_a, operand_b):
+        # do a comparison of operand a and b
+        self.alu("CMP", operand_a, operand_b)
+        self.pc += 3
+
+    def handle_jmp(self, operand_a, operand_b):
+        # move the pc to a spot in registry
+        self.pc = self.reg[operand_a]
+
+    def handle_jeq(self, operand_a, operand_b):
+        # check if `bitwise and` of flag and 1 is 1
+        if (self.fl & 0b1) == 1:
+            # if true do a jump to an address in registry
+            self.handle_jmp(operand_a, None)
+        else:
+            # otherwise do nothing and increment pc by 2
+            self.pc += 2
+
+    def handle_jne(self, operand_a, operand_b):
+        # check if `bitwise and` of flag and 1 is 0
+        if (self.fl & 0b1) == 0:
+            # if true do a jump to an address in registry
+            self.handle_jmp(operand_a, None)
+        else:
+            # otherwise do nothing and increment pc by 2
+            self.pc += 2
 
     def run(self):
         """Run the CPU."""
